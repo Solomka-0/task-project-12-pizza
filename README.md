@@ -21,6 +21,7 @@
 
 ## Установка
 
+### Локально
 1. **Клонируйте репозиторий:**
 ```bash
 git clone git@github.com:Solomka-0/task-project-12-pizza.git
@@ -50,7 +51,8 @@ CREATE TABLE order_items (
     FOREIGN KEY (order_id) REFERENCES orders(order_id)
 );
 ```
-5. **Соберите приложение с помощью Docker Compose (для проверки работы Docker):**
+### Docker
+1. **Соберите приложение с помощью Docker Compose (c предустановленным и запущенным Docker):**
 ```bash 
 docker-compose up -d
 ```
