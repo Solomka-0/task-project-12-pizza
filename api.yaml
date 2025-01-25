@@ -1,0 +1,252 @@
+openapi: 3.0.0
+info:
+  version: "1.0.0"
+  title: "Pizza Service API"
+servers:
+  - url: http://localhost:8000
+paths:
+  /orders:
+    get:
+      summary: "Получение списка заказов"
+      tags:
+        - "Orders"
+      security:
+        - X-Auth-Key: [ ]
+      parameters:
+        - name: "done"
+          in: "query"
+          required: false
+          schema:
+            type: "boolean"
+      responses:
+        '200':
+          description: "Список заказов"
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/OrderSummary'
+              example:
+                - order_id: "aac"
+                  done: true
+                - order_id: "ab"
+                  done: false
+        '401':
+          description: "Неавторизовано"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    post:
+      summary: "Создание нового заказа"
+      tags:
+        - "Orders"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OrderCreateRequest'
+            example:
+              items: [1, 2, 3, 3]
+      responses:
+        '200':
+          description: "Успешно создан"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Order'
+              example:
+                order_id: "aac"
+                items: [1, 2, 3, 3]
+                done: false
+        '400':
+          description: "Некорректный запрос"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /orders/{order_id}/items:
+    post:
+      summary: "Добавление товаров в заказ"
+      tags:
+        - "Orders"
+      parameters:
+        - name: "order_id"
+          in: "path"
+          required: true
+          schema:
+            type: "string"
+            pattern: '^\w{3,15}$'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                type: integer
+                minimum: 1
+                maximum: 5000
+            example:
+              - 4
+              - 7
+              - 8
+      responses:
+        '204':
+          description: "Товары успешно добавлены"
+        '400':
+          description: "Некорректный запрос"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: "Заказ не найден"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: "Невозможно добавить товары в завершённый заказ"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /orders/{order_id}:
+    get:
+      summary: "Получение информации о заказе"
+      tags:
+        - "Orders"
+      parameters:
+        - name: "order_id"
+          in: "path"
+          required: true
+          schema:
+            type: "string"
+            pattern: '^\w{3,15}$'
+      responses:
+        '200':
+          description: "Информация о заказе"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Order'
+              example:
+                order_id: "aac"
+                items: [1, 2, 3, 4]
+                done: false
+        '404':
+          description: "Заказ не найден"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /orders/{order_id}/done:
+    post:
+      summary: "Пометка заказа как выполненного"
+      tags:
+        - "Orders"
+      parameters:
+        - name: "order_id"
+          in: "path"
+          required: true
+          schema:
+            type: "string"
+            pattern: '^\w{3,15}$'
+      security:
+        - X-Auth-Key: []
+      responses:
+        '204':
+          description: "Заказ успешно помечен как выполненный"
+        '400':
+          description: "Некорректный запрос"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: "Неавторизовано"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: "Заказ не найден"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: "Невозможно пометить заказ как выполненный"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+components:
+  securitySchemes:
+    X-Auth-Key:
+      type: apiKey
+      in: header
+      name: X-Auth-Key
+      description: "HTTP заголовок с ключом авторизации"
+  schemas:
+    Order:
+      type: object
+      properties:
+        order_id:
+          type: string
+          description: "Уникальный идентификатор заказа"
+          minLength: 3
+          maxLength: 15
+          pattern: '^\w{3,15}$'
+        items:
+          type: array
+          description: "Список товаров в заказе"
+          items:
+            type: integer
+            minimum: 1
+            maximum: 5000
+        done:
+          type: boolean
+          description: "Статус готовности заказа"
+      required:
+        - order_id
+        - items
+        - done
+    OrderCreateRequest:
+      type: object
+      properties:
+        items:
+          type: array
+          description: "Список товаров для добавления в заказ"
+          items:
+            type: integer
+            minimum: 1
+            maximum: 5000
+      required:
+        - items
+    OrderSummary:
+      type: object
+      properties:
+        order_id:
+          type: string
+          description: "Уникальный идентификатор заказа"
+          minLength: 3
+          maxLength: 15
+          pattern: '^\w{3,15}$'
+        done:
+          type: boolean
+          description: "Статус готовности заказа"
+      required:
+        - order_id
+        - done
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+          description: "Сообщение об ошибке"
+      required:
+        - error
